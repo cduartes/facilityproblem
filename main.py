@@ -1,12 +1,20 @@
 import numpy as np
+from typing import List
+import math
+import argparse
 import itertools, time
+
+parser = argparse.ArgumentParser(
+    description='FacilityProblem solver with Tabu Search.'
+)
+parser.add_argument('file', help='Name of the file to load')
+args = parser.parse_args()
 
 class Tabu(object):
     """ Tabu Class
     Must work on vectors?
     ------
     Parameters
-
 
     """
     
@@ -33,47 +41,50 @@ class Tabu(object):
     def g_func2(self, s):
         return 1
 
-def init():
-    f_capacities = [] 
-    f_fixed_costs = []
-    with open("capa8000", "r") as f:
-        n, m = f.readline()[1:-2].split(' ')
-        print(n)
-        s = np.zeros(int(m)) # representation of the solution, all facilities closed
-        print(np.shape(s))
-        costs = []
-        for i in range(0, int(n)):
-            b_i, f_i = f.readline()[1:-2].split(' ')
-            f_capacities.append(b_i)
-            f_fixed_costs.append(f_i)
-        
-        f_capacities = [float(x) for x in f_capacities]
-        f_fixed_costs = [float(x) for x in f_fixed_costs]
 
-        c_demands = []
-        print(m)
-        for i in range(0, int(m)):
-            c_demands.append(f.readline()[1:-2])
-            print(c_demands)
+def readFile(fileName: str):
+    f_fixed = []
+    f_capacities = []
+    c_costs = []
+    c_demand = []
+    with open(fileName, "r") as f:
+        nLocations, nClients = f.readline().strip().split()
+        nLocations = int(nLocations)
+        nClients = int(nClients)
+        for i in range(nLocations):
+            b_i, f_i = f.readline().strip().split()
+            f_fixed.append(float(f_i))
+            f_capacities.append(float(b_i))
+        for i  in range(nClients):
+            demand = int(f.readline().strip())
+            c_demand.append(demand)
+            lines = math.ceil(nLocations / 7)
+            clientsCost = []
+            for i in range(lines):
+                line = f.readline().strip().split()
+                clientsCost += line
+            clientsCost = np.array([float(x) for x in clientsCost])
+            c_costs.append(clientsCost)
+    f_fixed = np.array(f_fixed)
+    f_capacities = np.array(f_capacities)
+    c_costs = np.array(c_costs)
+    c_demand = np.array(c_demand)
+    return f_fixed, f_capacities, c_costs, c_demand
 
-            for c in range(0, 14):
-                line = f.readline()[1:-2].split(' ')
-                print(line)
-        
-        time.sleep(5.5)    # pause 5.5 seconds
-
-        
-        c_demands = [float(x) for x in c_demands]
-        
-        for i in range(1, int(n)):
-            cost_for_i_to_j = f.readline()[:-2].split(' ')
-            cost_for_i_to_j = [float(x) for x in cost_for_i_to_j]
-            costs.append(cost_for_i_to_j)
-        suplying_costs = np.array(costs)
-    return f_capacities, f_fixed_costs, c_demands, suplying_costs, s
-
-def initialSolution(s):
-    return s
+def initialSolution(f_fixed, f_capacities, c_costs, c_demand):
+    def getRatio(elem):
+        return elem['ratio']
+    order = []
+    demand_total = c_demand.sum()
+    for index, data in enumerate(zip(f_fixed, f_capacities)):
+        ratio = data[0]/data[1]
+        order.append({ 'index': index, 'ratio': ratio})
+    order = sorted(order, key=getRatio)
+    X = np.zeros((f_fixed.shape[0], c_demand.shape[0]))
+    for o in order:
+        X[o['index']][c_costs[o['index']].argmin()] = 1
+        demand_total -= c_demand[c_costs[o['index']].argmin()]
+    return X
 
 def is_feasible(s):
     return True
@@ -91,32 +102,36 @@ def show_result(s):
     print("results")
 
 if __name__ == "__main__":
-    (f_capacities, f_fixed_costs, c_demands, suplying_costs, s) = init()
-    
-    tabu = np.negative(np.ones((1,3)))
-    print(tabu)
+    f_fixed, f_capacities, c_costs, c_demand = readFile(args.file)
+    demand_total = c_demand.sum()
+    s_0 = initialSolution(f_fixed, f_capacities, c_costs, c_demand)
 
-    # the solution is represented by a vector
-    tabu = Tabu()
-    s0 = initialSolution(s)
-    k = 3
-    s_hat = tabu.tabu_search(s0)
-    if (is_feasible(s_hat)):
-        s_it = s_hat
-        g_it = g_func(s_it)
-    else:
-        #s_it = None
-        g_it = float('Inf')
+    # (f_capacities, f_fixed_costs, c_demands, suplying_costs, s) = init()
     
-    for v in range(k):
-        s_prim = perturbation(s_it)
-        s_sl = tabu.tabu_search(s_prim)
-        if(is_feasible(s_sl) and g_func(s_sl) < g_it):
-            s_it = s_sl
-            g_it = g_func(s_sl)
-            omega = 0
-        if(is_feasible(s_sl) and is_satisfying(s_sl)):
-            s_hat = s_sl
+    # tabu = np.negative(np.ones((1,3)))
+    # print(tabu)
 
-    if(is_satisfying(s_hat)):
-        show_result(s_hat)
+    # # the solution is represented by a vector
+    # tabu = Tabu()
+    # s0 = initialSolution(s)
+    # k = 3
+    # s_hat = tabu.tabu_search(s0)
+    # if (is_feasible(s_hat)):
+    #     s_it = s_hat
+    #     g_it = g_func(s_it)
+    # else:
+    #     #s_it = None
+    #     g_it = float('Inf')
+    
+    # for v in range(k):
+    #     s_prim = perturbation(s_it)
+    #     s_sl = tabu.tabu_search(s_prim)
+    #     if(is_feasible(s_sl) and g_func(s_sl) < g_it):
+    #         s_it = s_sl
+    #         g_it = g_func(s_sl)
+    #         omega = 0
+    #     if(is_feasible(s_sl) and is_satisfying(s_sl)):
+    #         s_hat = s_sl
+
+    # if(is_satisfying(s_hat)):
+    #     show_result(s_hat)

@@ -331,3 +331,5 @@ ASALocalRun/
 
 # ENV
 /ENV
+
+.vscode/
