@@ -1,5 +1,5 @@
 import numpy as np
-import itertools
+import itertools, time
 
 class Tabu(object):
     """ Tabu Class
@@ -13,7 +13,7 @@ class Tabu(object):
     def __init__(self):
         print("something")
 
-    def search(self, s0):
+    def tabu_search(self, s0):
         s_prime = s0
         g_prime2 = g_func(s0)
 
@@ -36,19 +36,33 @@ class Tabu(object):
 def init():
     f_capacities = [] 
     f_fixed_costs = []
-    with open("cap61.txt", "r") as f:
-        n, m = f.readline()[:-1].split(' ')
+    with open("capa8000", "r") as f:
+        n, m = f.readline()[1:-2].split(' ')
+        print(n)
         s = np.zeros(int(m)) # representation of the solution, all facilities closed
+        print(np.shape(s))
         costs = []
         for i in range(0, int(n)):
-            b_i, f_i = f.readline()[:-1].split(' ')
+            b_i, f_i = f.readline()[1:-2].split(' ')
             f_capacities.append(b_i)
             f_fixed_costs.append(f_i)
         
         f_capacities = [float(x) for x in f_capacities]
         f_fixed_costs = [float(x) for x in f_fixed_costs]
 
-        c_demands = f.readline()[:-2].split(' ')
+        c_demands = []
+        print(m)
+        for i in range(0, int(m)):
+            c_demands.append(f.readline()[1:-2])
+            print(c_demands)
+
+            for c in range(0, 14):
+                line = f.readline()[1:-2].split(' ')
+                print(line)
+        
+        time.sleep(5.5)    # pause 5.5 seconds
+
+        
         c_demands = [float(x) for x in c_demands]
         
         for i in range(1, int(n)):
@@ -78,12 +92,15 @@ def show_result(s):
 
 if __name__ == "__main__":
     (f_capacities, f_fixed_costs, c_demands, suplying_costs, s) = init()
-    print(s)
+    
+    tabu = np.negative(np.ones((1,3)))
+    print(tabu)
+
     # the solution is represented by a vector
     tabu = Tabu()
     s0 = initialSolution(s)
     k = 3
-    s_hat = tabu.search(s0)
+    s_hat = tabu.tabu_search(s0)
     if (is_feasible(s_hat)):
         s_it = s_hat
         g_it = g_func(s_it)
@@ -93,7 +110,7 @@ if __name__ == "__main__":
     
     for v in range(k):
         s_prim = perturbation(s_it)
-        s_sl = tabu.search(s_prim)
+        s_sl = tabu.tabu_search(s_prim)
         if(is_feasible(s_sl) and g_func(s_sl) < g_it):
             s_it = s_sl
             g_it = g_func(s_sl)
