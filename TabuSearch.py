@@ -26,7 +26,7 @@ class Tabu(object):
             self.g_prime1 = float('Inf')
         #tabu(j,l) = -1
         self.s = s0.X
-        print(self.generate_neighbours(self.s))
+        self.generate_neighbours(self.s)
         # for x in range(gamma):
 
         return 1

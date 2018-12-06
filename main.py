@@ -58,12 +58,23 @@ def initialSolution(f_fixed, f_capacities, c_costs, c_demand):
     order = sorted(order, key=getRatio)
     X = np.zeros((f_fixed.shape[0], c_demand.shape[0]))
     Y = np.zeros(f_fixed.shape[0])
+    list_selected = []
+    copy_costs = c_costs.copy()
     for o in order:
         Y[o['index']] = 1
         demand_total -= f_capacities[o['index']]
-        X[o['index']][c_costs[o['index']].argmin()] = 1
+        capacity = f_capacities[o['index']]
+        while capacity > 0 and len(list_selected) < 1000:
+            index = copy_costs[o['index']].argmin()
+            copy_costs[o['index']][index] = float('Inf')
+            if (index not in list_selected):
+                list_selected.append(index)
+                X[o['index']][index] = 1
+                capacity -= c_demand[index]
         if (demand_total <= 0):
             break
+    print((Y*f_capacities).sum())
+    print(len(list_selected))
     return X, Y
 
 def is_feasible(s):
