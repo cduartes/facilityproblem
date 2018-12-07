@@ -57,6 +57,7 @@ def initialSolution(f_fixed, f_capacities, c_costs, c_demand):
         order.append({ 'index': index, 'ratio': ratio})
     order = sorted(order, key=getRatio)
     X = np.zeros((f_fixed.shape[0], c_demand.shape[0]))
+    print(X)
     Y = np.zeros(f_fixed.shape[0])
     list_selected = []
     copy_costs = c_costs.copy()
@@ -73,12 +74,26 @@ def initialSolution(f_fixed, f_capacities, c_costs, c_demand):
                 capacity -= c_demand[index]
         if (demand_total <= 0):
             break
-    print((Y*f_capacities).sum())
-    print(len(list_selected))
     return X, Y
 
-def is_feasible(s):
-    return True
+def is_feasible(s, c_demand, f_capacities):
+    """
+    NOTE: Solutions are allowed to be infeasible during the neighborhood search
+    A solution is infeasible if it violates the capacity constraint of the facilities.
+    J = d.shape[0] is the number of customers
+    I = b.shape[0] is the number of facilities
+    """
+    sum1 = 0
+    sum2 = 0
+
+    for i in range(0, f_capacities.shape[0]):
+        for j in range(0, c_demand.shape[0]):
+            sum2 = c_demand[j]*s.X[i][j] - f_capacities[i]*s.Y[i]
+        sum1 += max(0, sum2)
+    if sum1 == 0:
+        return True
+    else:
+        return False
 
 def is_satisfying(s):
     return True
@@ -105,12 +120,11 @@ if __name__ == "__main__":
     X, Y = initialSolution(f_fixed, f_capacities, c_costs, c_demand)
     s0 = Solution(X, Y, c_costs, f_fixed)
     tabu = Tabu(g, is_feasible, X.shape, 100)
-    tabu.tabu_search(s0)
+    tabu.tabu_search(s0, c_demand, f_capacities)
+    print(s0)
+    print(is_feasible(s0, c_demand, f_capacities))
     g(s0)
-
-    # (f_capacities, f_fixed_costs, c_demands, suplying_costs, s) = init()
     
-    # tabu = np.negative(np.ones((1,3)))
     # print(tabu)
 
     # # the solution is represented by a vector

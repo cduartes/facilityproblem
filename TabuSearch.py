@@ -15,11 +15,11 @@ class Tabu(object):
         self.gamma = gamma
         
 
-    def tabu_search(self, s0):
+    def tabu_search(self, s0, c_demand, f_capacities):
         self.s_prime = s0.X
         self.g_prime2 = self.g_func(s0)
 
-        if (self.is_feasible(s0)):
+        if (self.is_feasible(s0, c_demand, f_capacities)):
             self.g_prime1 = self.g_func(s0)
         else:
             self.s_prime = None
