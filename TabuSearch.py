@@ -21,6 +21,13 @@ class Tabu(object):
         
 
     def tabu_search(self, s0, c_demand, f_capacities):
+        '''
+        s_prime = S~*
+        g_prime1 = g1*
+        g_prime2 = g2*
+        s_prime_hat = S(hat)*
+        S = S
+        '''
         self.s_prime = s0
         self.g_prime2 = self.g_func(s0)
 
@@ -64,6 +71,9 @@ class Tabu(object):
             return self.s_prime
 
     def generate_neighbours(self, matrix):
+        '''
+        generate neighbors
+        '''
         clients = matrix.copy().transpose()
         neighbors = []
         for i, c in enumerate(clients):
@@ -85,6 +95,13 @@ class Tabu(object):
         return neighbors, neighbors2
 
     def evaluate_neighbors(self, solution, N1, N2):
+        '''
+        Evaluate Neighbors
+        sol is the best solution
+        g_sol is the evaluation
+        selected is the movement (client, origin, destination)
+        top is a list of the best movements: [(selected, g )]
+        '''
         min_g = float('inf')
         selected = None
         S_ = None
@@ -97,7 +114,7 @@ class Tabu(object):
             test_sol = Solution(testing, Y, solution.costs, solution.fixed)
             sol = self.g_func(test_sol)
             if sol < min_g:
-                top.insert(0, (selected, min_g, selected))
+                top.insert(0, (selected, min_g))
                 min_g = sol
                 selected = pos
                 S_ = test_sol
@@ -111,7 +128,7 @@ class Tabu(object):
             test_sol = Solution(testing, Y, solution.costs, solution.fixed)
             sol = self.g_func(test_sol)
             if sol < min_g:
-                top.insert(0, (selected, min_g, selected))
+                top.insert(0, (selected, min_g))
                 min_g = sol
                 selected = pos
                 S_= test_sol

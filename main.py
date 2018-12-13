@@ -94,7 +94,7 @@ def is_feasible(s, c_demand, f_capacities):
 def is_satisfying(s):
     return True
 
-def option1(s):
+def option1(s, c_costs):
     rows = []
     for index, row in enumerate(s.X):
         if row.sum() == 1:
@@ -109,18 +109,42 @@ def option1(s):
         for index, c_f in enumerate(c_costs):
             if s.Y[index] == 1 and index != selected:
                 if cost_min > c_f[client]:
-                    c_min = c_f[client]
+                    cost_min = c_f[client]
                     cost_index = index
         s.X[cost_index, client] = 1
     return s
 
-def option2(s):
-    pass
+def option3(s, f_capacities, c_demand):
+    rows = []
+    for index, row in enumerate(s.X):
+        if row.sum() > 0:
+            rows.append(index)
+    if rows:
+        selected = np.random.choice(rows, 1)[0]
+        posibles = []
+        clients = np.argwhere(s.X[selected] == 1)
+        total_demand = 0
+        for cord in clients:
+            total_demand += c_demand[cord[0]]
+        for index, facility in enumerate(f_capacities):
+            if index != selected and facility >= total_demand:
+                posibles.append(index)
+        if posibles:
+            transfer_facility = np.random.choice(posibles, 1)[0]
+            s.X[transfer_facility] += s.X[selected]
+            s.X[selected] = np.zeros(s.X[selected].shape)
+    return s
 
-def perturbation(s, c_costs):
-    option = np.random.randint(1, 6)
-    if True:
-        s_ = option1(s)
+
+
+def perturbation(s, c_costs, f_capacities, c_demand):
+    option = np.random.randint(1, 3)
+    if option == 1:
+        print('pertubation: 1')
+        s_ = option1(s, c_costs)
+    if option == 2:
+        print('pertubation: 3')
+        s_ = option3(s, f_capacities, c_demand)
     return s_
 
 def g(s0):
@@ -155,7 +179,7 @@ if __name__ == "__main__":
         s_prime = None
         g_prime = float('inf')
     for i in tqdm(range(K)):
-        s_dev = perturbation(s_hat, c_costs)
+        s_dev = perturbation(s_hat, c_costs, f_capacities, c_demand)
         S_ = tabu.tabu_search(s_dev, c_demand, f_capacities)
         if is_feasible(S_, c_demand, f_capacities) and g(s_prime) < g_prime:
             s_prime = S_
