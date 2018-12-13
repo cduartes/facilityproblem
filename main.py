@@ -115,7 +115,7 @@ def option1(s):
     return s
 
 def option2(s):
-
+    pass
 
 def perturbation(s, c_costs):
     option = np.random.randint(1, 6)
