@@ -133,11 +133,11 @@ def g(s0):
             sum1 += c_j * s0.X[i][j]
     return sum1 + sum2
 
-def show_result(s):
+def show_result(s, g):
     print("results")
-    print(s_prime.X)
-    print(s_prime.Y)
-    print(g_prime)
+    print(s.X)
+    print(s.Y)
+    print(g)
     
 
 if __name__ == "__main__":
@@ -161,5 +161,6 @@ if __name__ == "__main__":
             s_prime = S_
             g_prime = g(s_prime)
             theta = 0
+    show_result(s_prime, g_prime)
     
     
