@@ -4,19 +4,14 @@ import math
 import argparse
 import itertools, time
 from TabuSearch import Tabu
+from Solution import Solution
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser(
     description='FacilityProblem solver with Tabu Search.'
 )
 parser.add_argument('file', help='Name of the file to load')
 args = parser.parse_args()
-
-class Solution():
-    def __init__(self, X, Y, costs, fixed):
-        self.X = X
-        self.Y = Y
-        self.costs = costs
-        self.fixed = fixed
 
 def readFile(fileName: str):
     f_fixed = []
@@ -57,7 +52,6 @@ def initialSolution(f_fixed, f_capacities, c_costs, c_demand):
         order.append({ 'index': index, 'ratio': ratio})
     order = sorted(order, key=getRatio)
     X = np.zeros((f_fixed.shape[0], c_demand.shape[0]))
-    print(X)
     Y = np.zeros(f_fixed.shape[0])
     list_selected = []
     copy_costs = c_costs.copy()
@@ -65,7 +59,9 @@ def initialSolution(f_fixed, f_capacities, c_costs, c_demand):
         Y[o['index']] = 1
         demand_total -= f_capacities[o['index']]
         capacity = f_capacities[o['index']]
-        while capacity > 0 and len(list_selected) < 1000:
+        if capacity == 0:
+            continue
+        while capacity > 0 and len(list_selected) < c_costs.shape[1]:
             index = copy_costs[o['index']].argmin()
             copy_costs[o['index']][index] = float('Inf')
             if (index not in list_selected):
@@ -98,8 +94,34 @@ def is_feasible(s, c_demand, f_capacities):
 def is_satisfying(s):
     return True
 
-def perturbation(s):
+def option1(s):
+    rows = []
+    for index, row in enumerate(s.X):
+        if row.sum() == 1:
+            rows.append(index)
+    if rows:
+        selected = np.random.choice(rows, 1)[0]
+        client = s.X[selected].argmax()
+        s.X[selected, client] = 0
+        s.Y = [1 if x.sum() > 0 else 0 for x in s.X]
+        cost_min = float('inf')
+        cost_index = None
+        for index, c_f in enumerate(c_costs):
+            if s.Y[index] == 1 and index != selected:
+                if cost_min > c_f[client]:
+                    c_min = c_f[client]
+                    cost_index = index
+        s.X[cost_index, client] = 1
     return s
+
+def option2(s):
+
+
+def perturbation(s, c_costs):
+    option = np.random.randint(1, 6)
+    if True:
+        s_ = option1(s)
+    return s_
 
 def g(s0):
     sum2 = 0
@@ -113,41 +135,31 @@ def g(s0):
 
 def show_result(s):
     print("results")
+    print(s_prime.X)
+    print(s_prime.Y)
+    print(g_prime)
+    
 
 if __name__ == "__main__":
+    K = 10
     f_fixed, f_capacities, c_costs, c_demand = readFile(args.file)
     demand_total = c_demand.sum()
     X, Y = initialSolution(f_fixed, f_capacities, c_costs, c_demand)
     s0 = Solution(X, Y, c_costs, f_fixed)
-    tabu = Tabu(g, is_feasible, X.shape, 100)
-    tabu.tabu_search(s0, c_demand, f_capacities)
-    print(s0)
-    print(is_feasible(s0, c_demand, f_capacities))
-    g(s0)
+    tabu = Tabu(g, is_feasible, X.shape, 10)
+    s_hat = tabu.tabu_search(s0, c_demand, f_capacities)
+    if (is_feasible(s_hat, c_demand, f_capacities)):
+        s_prime = s_hat
+        g_prime = g(s_hat)
+    else:
+        s_prime = None
+        g_prime = float('inf')
+    for i in tqdm(range(K)):
+        s_dev = perturbation(s_hat, c_costs)
+        S_ = tabu.tabu_search(s_dev, c_demand, f_capacities)
+        if is_feasible(S_, c_demand, f_capacities) and g(s_prime) < g_prime:
+            s_prime = S_
+            g_prime = g(s_prime)
+            theta = 0
     
-    # print(tabu)
-
-    # # the solution is represented by a vector
-    # tabu = Tabu()
-    # s0 = initialSolution(s)
-    # k = 3
-    # s_hat = tabu.tabu_search(s0)
-    # if (is_feasible(s_hat)):
-    #     s_it = s_hat
-    #     g_it = g_func(s_it)
-    # else:
-    #     #s_it = None
-    #     g_it = float('Inf')
     
-    # for v in range(k):
-    #     s_prim = perturbation(s_it)
-    #     s_sl = tabu.tabu_search(s_prim)
-    #     if(is_feasible(s_sl) and g_func(s_sl) < g_it):
-    #         s_it = s_sl
-    #         g_it = g_func(s_sl)
-    #         omega = 0
-    #     if(is_feasible(s_sl) and is_satisfying(s_sl)):
-    #         s_hat = s_sl
-
-    # if(is_satisfying(s_hat)):
-    #     show_result(s_hat)
