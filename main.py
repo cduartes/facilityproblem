@@ -147,7 +147,7 @@ def perturbation(s, c_costs, f_capacities, c_demand):
         s_ = option3(s, f_capacities, c_demand)
     return s_
 
-def g(s0):
+def g(s0): #TODO: PREGUNTAR A MATIAS POR alpha*q
     sum2 = 0
     for index in range(len(s0.fixed)):
         sum2 += s0.Y[index] * s0.fixed[index]
@@ -156,6 +156,22 @@ def g(s0):
         for j, c_j  in enumerate(c_i):
             sum1 += c_j * s0.X[i][j]
     return sum1 + sum2
+
+def q(s, c_demand, f_capacities):
+    """
+    NOTE: Solutions are allowed to be infeasible during the neighborhood search
+    A solution is infeasible if it violates the capacity constraint of the facilities.
+    J = d.shape[0] is the number of customers
+    I = b.shape[0] is the number of facilities
+    """
+    sum1 = 0
+    sum2 = 0
+
+    for i in range(0, f_capacities.shape[0]):
+        for j in range(0, c_demand.shape[0]):
+            sum2 = c_demand[j]*s.X[i][j] - f_capacities[i]*s.Y[i]
+        sum1 += max(0, sum2)
+    return sum1
 
 def show_result(s, g):
     print("results")
@@ -175,7 +191,7 @@ if __name__ == "__main__":
     f_fixed, f_capacities, c_costs, c_demand = readFile(args.file)
     X, Y = initialSolution(f_fixed, f_capacities, c_costs, c_demand)
     s0 = Solution(X, Y, c_costs, f_fixed)
-    tabu = Tabu(g, is_feasible, X.shape, 10)
+    tabu = Tabu(g, q, is_feasible, X.shape, K)
     s_hat = tabu.tabu_search(s0.copy(), c_demand, f_capacities)
     if (is_feasible(s_hat, c_demand, f_capacities)):
         s_prime = s_hat.copy()

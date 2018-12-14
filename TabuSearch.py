@@ -9,8 +9,9 @@ class Tabu(object):
     Parameters
 
     """
-    def __init__(self, g, feasible, n, gamma, beta=0.75, epsilon=0.1):
+    def __init__(self, g, q, feasible, n, gamma, beta=0.75, epsilon=0.1):
         self.g_func = g
+        self.q_func = q
         self.is_feasible = feasible
         self.matrix = np.negative(np.ones(n))
         self.alpha = 1
@@ -19,7 +20,6 @@ class Tabu(object):
         self.min_g = float('inf')
         self.epsilon = epsilon
         
-
     def tabu_search(self, s0, c_demand, f_capacities):
         '''
         s_prime = S~*
@@ -60,16 +60,18 @@ class Tabu(object):
                 self.s_prime_hat= S_.copy()
                 self.g_prime1 = g_sol
             if len(selected) == 3:
-                self.matrix[selected[2], selected[0]] = 7
+                self.matrix[selected[2], selected[0]] = 7 # OMEGA = 7 + m(a/u); a: numero de veces que este movimiento se ha realizado; u: valor máximo de movimientos (a).
             else:
                 self.matrix[selected[2], selected[1]] = 7
                 self.matrix[selected[3], selected[0]] = 7
             #  TODO: paso 11 algoritmo
             self.S = self.s_prime.copy()
+            self.update_alpha(self.q_func(self.S, c_demand, f_capacities))
         if self.s_prime_hat:
             return self.s_prime_hat.copy()
         else:
             return self.s_prime.copy()
+
 
     def generate_neighbours(self, matrix):
         '''
@@ -77,6 +79,7 @@ class Tabu(object):
         [(0, 1, 4)]
         [(0, 4, 1, 4)]
         '''
+        #print(self.matrix)
         clients = matrix.copy().transpose()
         neighbors = []
         for i, c in enumerate(clients):
@@ -84,7 +87,8 @@ class Tabu(object):
             for x in range(matrix.shape[0]):
                 if np.random.random() <= self.beta:
                     #  TODO: self.matrix[x, 1] no debe evaluarse aca. falta criterio de aspiracion
-                    if x != original_facility and self.matrix[x, i] < 0:
+                    #if x != original_facility and self.matrix[x, i] < 0:
+                    if x != original_facility:
                         neighbors.append((i, original_facility, x))
         neighbors2 = []
         for i, c in enumerate(clients):
@@ -94,7 +98,8 @@ class Tabu(object):
                     continue
                 if np.random.random() <= self.beta:
                     original_facility2 = np.where(k == 1)[0][0]
-                    if original_facility2 != original_facility and self.matrix[original_facility2, i] < 0:
+                    #if original_facility2 != original_facility and self.matrix[original_facility2, i] < 0:
+                    if original_facility2 != original_facility:
                         neighbors2.append((i, j, original_facility, original_facility2))
         return neighbors, neighbors2
 
@@ -109,15 +114,25 @@ class Tabu(object):
         min_g = float('inf')
         selected = None
         S_ = None
+         #(is_aspirated(self.matrix[x, i]) or not(is_tabu(self.matrix[x, i]))
         top = []
+
+        
+        # penalizations = np.argwhere(self.matrix >= 0)
+        # print(penalizations)
+
+        # for f, c in enumerate(penalizations):
+        #     if 
+
         for pos in N1:
             testing = solution.X.copy()
             testing[pos[1], pos[0]] = 0
             testing[pos[2], pos[0]] = 1
             Y = [1 if x.sum() > 0 else 0 for x in testing]
             test_sol = Solution(testing, Y, solution.costs, solution.fixed)
+
             sol = self.g_func(test_sol)
-            if sol < min_g:
+            if sol < min_g and self.is_aspirated(sol):
                 top.insert(0, (testing, min_g, selected))
                 min_g = sol
                 selected = pos
@@ -131,7 +146,7 @@ class Tabu(object):
             Y = [1 if x.sum() > 0 else 0 for x in testing]
             test_sol = Solution(testing, Y, solution.costs, solution.fixed)
             sol = self.g_func(test_sol)
-            if sol < min_g:
+            if sol < min_g and self.is_aspirated(sol):
                 top.insert(0, (testing, min_g, selected))
                 min_g = sol
                 selected = pos
@@ -139,8 +154,23 @@ class Tabu(object):
         self.min_g = sol
         return S_, sol, selected, top
 
-    def is_tabu(self):
-        return False
+    def is_tabu(self, movement):
+        if movement >= 0: #tabu
+            return True
+        else:
+            return False
 
-    def g_func2(self, s):
-        return 1
+    def is_aspirated(self, eval):
+        if eval < self.g_prime1:
+            return True
+        elif eval <  self.g_prime2:
+            return True
+        else:
+            return False
+
+    def update_alpha(self, q_s):
+        if q_s > 0:
+            self.alpha = self.alpha / 1+self.epsilon
+        else:
+            self.alpha = self.alpha * (1+self.epsilon)
+        
