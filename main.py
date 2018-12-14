@@ -165,26 +165,32 @@ def show_result(s, g):
     
 
 if __name__ == "__main__":
+    '''
+    s_prime = S*
+    g_prime = g*
+    s_dev = S'    
+    S_ = S-
+    '''
     K = 10
     f_fixed, f_capacities, c_costs, c_demand = readFile(args.file)
-    demand_total = c_demand.sum()
     X, Y = initialSolution(f_fixed, f_capacities, c_costs, c_demand)
     s0 = Solution(X, Y, c_costs, f_fixed)
     tabu = Tabu(g, is_feasible, X.shape, 10)
-    s_hat = tabu.tabu_search(s0, c_demand, f_capacities)
+    s_hat = tabu.tabu_search(s0.copy(), c_demand, f_capacities)
     if (is_feasible(s_hat, c_demand, f_capacities)):
-        s_prime = s_hat
+        s_prime = s_hat.copy()
         g_prime = g(s_hat)
     else:
         s_prime = None
         g_prime = float('inf')
     for i in tqdm(range(K)):
-        s_dev = perturbation(s_hat, c_costs, f_capacities, c_demand)
-        S_ = tabu.tabu_search(s_dev, c_demand, f_capacities)
+        s_dev = perturbation(s_hat.copy(), c_costs, f_capacities, c_demand)
+        S_ = tabu.tabu_search(s_dev.copy(), c_demand, f_capacities)
         if is_feasible(S_, c_demand, f_capacities) and g(s_prime) < g_prime:
-            s_prime = S_
+            s_prime = S_.copy()
             g_prime = g(s_prime)
             theta = 0
+        #  TODO: if S_ feasible and S_ satisfies the acceptance criteriion set s_hat = S_
     show_result(s_prime, g_prime)
     
     
