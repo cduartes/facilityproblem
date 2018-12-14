@@ -83,16 +83,34 @@ def is_feasible(s, c_demand, f_capacities):
     sum2 = 0
 
     for i in range(0, f_capacities.shape[0]):
+        sum2 = 0
         for j in range(0, c_demand.shape[0]):
-            sum2 = c_demand[j]*s.X[i][j] - f_capacities[i]*s.Y[i]
+            sum2 += c_demand[j] * s.X[i][j]
+        sum2 -= f_capacities[i] * s.Y[i]
         sum1 += max(0, sum2)
     if sum1 == 0:
+        print("holi")
         return True
     else:
         return False
 
-def is_satisfying(s):
-    return True
+def show_result(s, g, c_demand, f_capacities):
+    print("results")
+    print("Demand vs Capacity per facility")
+    for index, facility in enumerate(s.X):
+        suma = 0
+        clients = np.argwhere(facility == 1)
+        for client in clients:
+            suma += c_demand[client[0]]
+        print("facility {}: {}/{} - {}".format(index, suma, f_capacities[index], len(clients)))
+    print(s.X)
+    print(s.Y)
+    print(g)
+
+def is_satisfying(s, delta, g_prime):
+    if g(s) < g_prime * (1 + delta):
+        return True
+    return False
 
 def option1(s, c_costs):
     rows = []
@@ -135,16 +153,28 @@ def option3(s, f_capacities, c_demand):
             s.X[selected] = np.zeros(s.X[selected].shape)
     return s
 
+def option4(s):
+    facilities = np.argwhere(s.Y == 1)
+    clients = np.argwhere(s.X == 1)
+    for client in clients:
+        selected = np.random.choice(facilities, 1)[0]
+        s.X[client[0], client[1]] = 0
+        s.X[selected, client[1]] = 1
+    return s
+
 
 
 def perturbation(s, c_costs, f_capacities, c_demand):
-    option = np.random.randint(1, 3)
+    option = np.random.randint(1, 4)
     if option == 1:
-        print('pertubation: 1')
+        print('\npertubation: 1')
         s_ = option1(s, c_costs)
     if option == 2:
-        print('pertubation: 3')
+        print('\npertubation: 3')
         s_ = option3(s, f_capacities, c_demand)
+    if option == 3:
+        print('\npertubation: 4')
+        s_ = option4(s)
     return s_
 
 def g(s0): #TODO: PREGUNTAR A MATIAS POR alpha*q
@@ -173,13 +203,6 @@ def q(s, c_demand, f_capacities):
         sum1 += max(0, sum2)
     return sum1
 
-def show_result(s, g):
-    print("results")
-    print(s.X)
-    print(s.Y)
-    print(g)
-    
-
 if __name__ == "__main__":
     '''
     s_prime = S*
@@ -188,6 +211,7 @@ if __name__ == "__main__":
     S_ = S-
     '''
     K = 10
+    delta = 0.05
     f_fixed, f_capacities, c_costs, c_demand = readFile(args.file)
     X, Y = initialSolution(f_fixed, f_capacities, c_costs, c_demand)
     s0 = Solution(X, Y, c_costs, f_fixed)
@@ -195,18 +219,20 @@ if __name__ == "__main__":
     s_hat = tabu.tabu_search(s0.copy(), c_demand, f_capacities)
     if (is_feasible(s_hat, c_demand, f_capacities)):
         s_prime = s_hat.copy()
-        g_prime = g(s_hat)
+        g_prime = g(s_prime)
     else:
         s_prime = None
         g_prime = float('inf')
     for i in tqdm(range(K)):
         s_dev = perturbation(s_hat.copy(), c_costs, f_capacities, c_demand)
         S_ = tabu.tabu_search(s_dev.copy(), c_demand, f_capacities)
-        if is_feasible(S_, c_demand, f_capacities) and g(s_prime) < g_prime:
+        if is_feasible(S_, c_demand, f_capacities) and g(S_) < g_prime:
             s_prime = S_.copy()
             g_prime = g(s_prime)
             theta = 0
         #  TODO: if S_ feasible and S_ satisfies the acceptance criteriion set s_hat = S_
-    show_result(s_prime, g_prime)
+        if is_feasible(S_, c_demand, f_capacities) and is_satisfying(S_, delta, g_prime):
+            s_hat = S_.copy()
+    show_result(s_prime, g_prime, c_demand, f_capacities)
     
     

@@ -9,7 +9,7 @@ class Tabu(object):
     Parameters
 
     """
-    def __init__(self, g, q, feasible, n, gamma, beta=0.75, epsilon=0.1):
+    def __init__(self, g, q, feasible, n, gamma, beta=0.75, epsilon=0.2):
         self.g_func = g
         self.q_func = q
         self.is_feasible = feasible
@@ -30,7 +30,8 @@ class Tabu(object):
         '''
         self.s_prime = s0.copy()
         self.g_prime2 = self.g_func(s0.copy())
-
+        self.c_demand = c_demand
+        self.f_capacities = f_capacities
         if (self.is_feasible(s0, c_demand, f_capacities)):
             self.s_prime_hat= s0.copy()
             self.g_prime1 = self.g_func(s0.copy())
@@ -48,6 +49,7 @@ class Tabu(object):
             N1, N2 = self.generate_neighbours(self.S.X)
             S_, g_sol, selected, top = self.evaluate_neighbors(self.S, N1, N2)
             if not (self.is_feasible(S_, c_demand, f_capacities)):
+                print(len(top))
                 for s_hat in top[1:]:
                     if (self.is_feasible(s_hat[0], c_demand, f_capacities) and s_hat[1] < self.g_prime1):
                         self.s_prime_hat= s_hat[0].copy()  #  solucion
@@ -129,14 +131,14 @@ class Tabu(object):
             testing[pos[1], pos[0]] = 0
             testing[pos[2], pos[0]] = 1
             Y = [1 if x.sum() > 0 else 0 for x in testing]
-            test_sol = Solution(testing, Y, solution.costs, solution.fixed)
-
+            test_sol = Solution(testing.copy(), Y, solution.costs, solution.fixed)
             sol = self.g_func(test_sol)
-            if sol < min_g and self.is_aspirated(sol):
-                top.insert(0, (testing, min_g, selected))
+            flag = self.is_feasible(test_sol, self.c_demand, self.f_capacities)
+            if sol < min_g and (self.is_aspirated(sol, flag) or self.matrix[pos[2], pos[0]] < 0):
                 min_g = sol
                 selected = pos
                 S_ = test_sol
+                top.insert(0, (test_sol.copy(), min_g, selected))
         for pos in N2:
             testing = solution.X.copy()
             testing[pos[2], pos[0]] = 0
@@ -144,24 +146,19 @@ class Tabu(object):
             testing[pos[2], pos[1]] = 1
             testing[pos[3], pos[0]] = 1
             Y = [1 if x.sum() > 0 else 0 for x in testing]
-            test_sol = Solution(testing, Y, solution.costs, solution.fixed)
+            test_sol = Solution(testing.copy(), Y, solution.costs, solution.fixed)
             sol = self.g_func(test_sol)
-            if sol < min_g and self.is_aspirated(sol):
-                top.insert(0, (testing, min_g, selected))
+            flag = self.is_feasible(test_sol, self.c_demand, self.f_capacities)
+            if sol < min_g  and (self.is_aspirated(sol, flag) or self.matrix[pos[2], pos[1]] < 0):
                 min_g = sol
                 selected = pos
                 S_= test_sol
+                top.insert(0, (test_sol.copy(), min_g, selected))
         self.min_g = sol
         return S_, sol, selected, top
 
-    def is_tabu(self, movement):
-        if movement >= 0: #tabu
-            return True
-        else:
-            return False
-
-    def is_aspirated(self, eval):
-        if eval < self.g_prime1:
+    def is_aspirated(self, eval, flag):
+        if flag and eval < self.g_prime1:
             return True
         elif eval <  self.g_prime2:
             return True
@@ -170,7 +167,7 @@ class Tabu(object):
 
     def update_alpha(self, q_s):
         if q_s > 0:
-            self.alpha = self.alpha / 1+self.epsilon
+            self.alpha = self.alpha / 1 + self.epsilon
         else:
-            self.alpha = self.alpha * (1+self.epsilon)
+            self.alpha = self.alpha * (1 + self.epsilon)
         
