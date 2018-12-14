@@ -49,7 +49,7 @@ class Tabu(object):
             N1, N2 = self.generate_neighbours(self.S.X)
             S_, g_sol, selected, top = self.evaluate_neighbors(self.S, N1, N2)
             if not (self.is_feasible(S_, c_demand, f_capacities)):
-                print(len(top))
+                #print(len(top))
                 for s_hat in top[1:]:
                     if (self.is_feasible(s_hat[0], c_demand, f_capacities) and s_hat[1] < self.g_prime1):
                         self.s_prime_hat= s_hat[0].copy()  #  solucion

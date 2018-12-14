@@ -89,7 +89,6 @@ def is_feasible(s, c_demand, f_capacities):
         sum2 -= f_capacities[i] * s.Y[i]
         sum1 += max(0, sum2)
     if sum1 == 0:
-        print("holi")
         return True
     else:
         return False
@@ -155,11 +154,13 @@ def option3(s, f_capacities, c_demand):
 
 def option4(s):
     facilities = np.argwhere(s.Y == 1)
+    print('facilities open: ',len(facilities))
     clients = np.argwhere(s.X == 1)
     for client in clients:
-        selected = np.random.choice(facilities, 1)[0]
-        s.X[client[0], client[1]] = 0
-        s.X[selected, client[1]] = 1
+        if facilities:
+            selected = np.random.choice(facilities, 1)[0]
+            s.X[client[0], client[1]] = 0
+            s.X[selected, client[1]] = 1
     return s
 
 
@@ -205,7 +206,8 @@ def q(s, c_demand, f_capacities):
 
 if __name__ == "__main__":
     '''
-    s_prime = S*
+    s_prime = s'
+    s_ast = s*
     g_prime = g*
     s_dev = S'    
     S_ = S-
@@ -218,21 +220,21 @@ if __name__ == "__main__":
     tabu = Tabu(g, q, is_feasible, X.shape, K)
     s_hat = tabu.tabu_search(s0.copy(), c_demand, f_capacities)
     if (is_feasible(s_hat, c_demand, f_capacities)):
-        s_prime = s_hat.copy()
-        g_prime = g(s_prime)
+        s_ast = s_hat.copy()
+        g_ast = g(s_ast)
     else:
         s_prime = None
-        g_prime = float('inf')
+        g_ast = float('inf')
     for i in tqdm(range(K)):
-        s_dev = perturbation(s_hat.copy(), c_costs, f_capacities, c_demand)
-        S_ = tabu.tabu_search(s_dev.copy(), c_demand, f_capacities)
-        if is_feasible(S_, c_demand, f_capacities) and g(S_) < g_prime:
-            s_prime = S_.copy()
-            g_prime = g(s_prime)
+        s_prime = perturbation(s_hat.copy(), c_costs, f_capacities, c_demand)
+        S_ = tabu.tabu_search(s_prime.copy(), c_demand, f_capacities)
+        if is_feasible(S_, c_demand, f_capacities) and g(S_) < g_ast:
+            s_ast = S_.copy()
+            g_ast = g(S_)
             theta = 0
         #  TODO: if S_ feasible and S_ satisfies the acceptance criteriion set s_hat = S_
-        if is_feasible(S_, c_demand, f_capacities) and is_satisfying(S_, delta, g_prime):
+        if is_feasible(S_, c_demand, f_capacities) and is_satisfying(S_, delta, g_ast):
             s_hat = S_.copy()
-    show_result(s_prime, g_prime, c_demand, f_capacities)
+    show_result(s_ast, g_ast, c_demand, f_capacities)
     
     
