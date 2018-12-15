@@ -9,18 +9,17 @@ class Tabu(object):
     Parameters
 
     """
-    def __init__(self, g, q, feasible, n, gamma, beta=0.75, epsilon=0.2):
+    def __init__(self, g, q, feasible, gamma, beta=0.75, epsilon=0.2):
         self.g_func = g
         self.q_func = q
         self.is_feasible = feasible
-        self.matrix = np.negative(np.ones(n))
-        self.alpha = 1
         self.gamma = gamma
         self.beta = beta
         self.min_g = float('inf')
         self.epsilon = epsilon
         
-    def tabu_search(self, s0, c_demand, f_capacities):
+    # Algorithm: Tabu search
+    def tabu_search(self, s0, c_demand, f_capacities, n):
         '''
         s_prime = S~*
         g_prime1 = g1*
@@ -28,6 +27,8 @@ class Tabu(object):
         s_prime_hat = S!(hat)*
         S = S
         '''
+
+        #Paso 1
         self.s_prime = s0.copy()
         self.g_prime2 = self.g_func(s0.copy())
         self.c_demand = c_demand
@@ -38,7 +39,13 @@ class Tabu(object):
         else:
             self.s_prime_hat= None
             self.g_prime1 = float('Inf')
+        #Paso 2
+        self.matrix = np.negative(np.ones(n))
+        #Paso 3
+        self.alpha = 1
+        #Paso 4
         self.S = s0.copy()
+        #Paso 5
         for _ in range(self.gamma):
             # Decrease Tabu count
             tabus = np.argwhere(self.matrix >= 0)
@@ -47,7 +54,9 @@ class Tabu(object):
             # Generate Neighbors and Evaluate them
             # (S_, g_sol: best solution and g(s_), selected: movement, top: list of best solutions )
             N1, N2 = self.generate_neighbours(self.S.X)
+        #Paso 6
             S_, g_sol, selected, top = self.evaluate_neighbors(self.S, N1, N2)
+        #Paso 7
             if not (self.is_feasible(S_, c_demand, f_capacities)):
                 #print(len(top))
                 for s_hat in top[1:]:
@@ -55,20 +64,26 @@ class Tabu(object):
                         self.s_prime_hat= s_hat[0].copy()  #  solucion
                         self.g_prime1 = s_hat[1]  #  evaluacion
                         break
+        #Paso 8
             if g_sol < self.g_prime2:
                 self.s_prime = S_.copy()
                 self.g_prime2 = g_sol 
+        #Paso 9
             if (self.is_feasible(S_, c_demand, f_capacities) and g_sol < self.g_prime1):
                 self.s_prime_hat= S_.copy()
                 self.g_prime1 = g_sol
+        #Paso 10
             if len(selected) == 3:
                 self.matrix[selected[2], selected[0]] = 7 # OMEGA = 7 + m(a/u); a: numero de veces que este movimiento se ha realizado; u: valor máximo de movimientos (a).
             else:
                 self.matrix[selected[2], selected[1]] = 7
                 self.matrix[selected[3], selected[0]] = 7
-            #  TODO: paso 11 algoritmo
-            self.S = self.s_prime.copy()
+        #Paso 11
             self.update_alpha(self.q_func(self.S, c_demand, f_capacities))
+        #Paso 12
+        #Paso 13 fin del for
+        #Paso 14
+        self.S = self.s_prime.copy()
         if self.s_prime_hat:
             return self.s_prime_hat.copy()
         else:

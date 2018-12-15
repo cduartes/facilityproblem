@@ -204,6 +204,7 @@ def q(s, c_demand, f_capacities):
         sum1 += max(0, sum2)
     return sum1
 
+#Algorithm Itetared Tabu Search
 if __name__ == "__main__":
     '''
     s_prime = s'
@@ -216,25 +217,37 @@ if __name__ == "__main__":
     delta = 0.05
     f_fixed, f_capacities, c_costs, c_demand = readFile(args.file)
     X, Y = initialSolution(f_fixed, f_capacities, c_costs, c_demand)
+    n = X.shape
+    #Paso 1
     s0 = Solution(X, Y, c_costs, f_fixed)
-    tabu = Tabu(g, q, is_feasible, X.shape, K)
-    s_hat = tabu.tabu_search(s0.copy(), c_demand, f_capacities)
+    tabu = Tabu(g, q, is_feasible, K)
+    #Paso 2
+    s_hat = tabu.tabu_search(s0.copy(), c_demand, f_capacities, n)
+    #Paso 3
     if (is_feasible(s_hat, c_demand, f_capacities)):
         s_ast = s_hat.copy()
         g_ast = g(s_ast)
     else:
         s_prime = None
         g_ast = float('inf')
+    #Paso 4
     for i in tqdm(range(K)):
-        s_prime = perturbation(s_hat.copy(), c_costs, f_capacities, c_demand)
-        S_ = tabu.tabu_search(s_prime.copy(), c_demand, f_capacities)
+    #Paso 5
+        s_p+rime = perturbation(s_hat.copy(), c_costs, f_capacities, c_demand)
+    #Paso 6
+        S_ = tabu.tabu_search(s_prime.copy(), c_demand, f_capacities, n)
+    #Paso 7
         if is_feasible(S_, c_demand, f_capacities) and g(S_) < g_ast:
+    #Paso 8
             s_ast = S_.copy()
             g_ast = g(S_)
             theta = 0
-        #  TODO: if S_ feasible and S_ satisfies the acceptance criteriion set s_hat = S_
+    #Paso 9: cierre del if
+    #Paso 10
         if is_feasible(S_, c_demand, f_capacities) and is_satisfying(S_, delta, g_ast):
             s_hat = S_.copy()
+    #Paso 11: ciere del for
+    #Paso 12
     show_result(s_ast, g_ast, c_demand, f_capacities)
     
     
