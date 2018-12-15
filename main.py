@@ -106,8 +106,8 @@ def show_result(s, g, c_demand, f_capacities):
     print(s.Y)
     print(g)
 
-def is_satisfying(s, delta, g_prime):
-    if g(s) < g_prime * (1 + delta):
+def is_satisfying(s, delta, g_prime, alpha):
+    if g(s, alpha) < g_prime * (1 + delta):
         return True
     return False
 
@@ -223,10 +223,12 @@ if __name__ == "__main__":
     tabu = Tabu(g, q, is_feasible, K)
     #Paso 2
     s_hat, alpha = tabu.tabu_search(s0.copy(), c_demand, f_capacities, n)
+    print(s_hat.X)
+    print(s_hat.Y)
     #Paso 3
     if (is_feasible(s_hat, c_demand, f_capacities)):
         s_ast = s_hat.copy()
-        g_ast = g(s_ast)
+        g_ast = g(s_ast, alpha)
     else:
         s_prime = None
         g_ast = float('inf')
@@ -244,7 +246,7 @@ if __name__ == "__main__":
             theta = 0
     #Paso 9: cierre del if
     #Paso 10
-        if is_feasible(S_, c_demand, f_capacities) and is_satisfying(S_, delta, g_ast):
+        if is_feasible(S_, c_demand, f_capacities) and is_satisfying(S_, delta, g_ast, alpha):
             s_hat = S_.copy()
     #Paso 11: ciere del for
     #Paso 12
