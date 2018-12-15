@@ -15,6 +15,7 @@ class Tabu(object):
         self.is_feasible = feasible
         self.gamma = gamma
         self.beta = beta
+        self.alpha = 1
         self.min_g = float('inf')
         self.epsilon = epsilon
         
@@ -30,12 +31,12 @@ class Tabu(object):
 
         #Paso 1
         self.s_prime = s0.copy()
-        self.g_prime2 = self.g_func(s0.copy())
+        self.g_prime2 = self.g_func(s0.copy(), self.alpha)
         self.c_demand = c_demand
         self.f_capacities = f_capacities
         if (self.is_feasible(s0, c_demand, f_capacities)):
             self.s_prime_hat= s0.copy()
-            self.g_prime1 = self.g_func(s0.copy())
+            self.g_prime1 = self.g_func(s0.copy(), self.alpha)
         else:
             self.s_prime_hat= None
             self.g_prime1 = float('Inf')
@@ -85,10 +86,9 @@ class Tabu(object):
         #Paso 14
         self.S = self.s_prime.copy()
         if self.s_prime_hat:
-            return self.s_prime_hat.copy()
+            return self.s_prime_hat.copy(), self.alpha
         else:
-            return self.s_prime.copy()
-
+            return self.s_prime.copy(), self.alpha
 
     def generate_neighbours(self, matrix):
         '''
@@ -147,7 +147,7 @@ class Tabu(object):
             testing[pos[2], pos[0]] = 1
             Y = [1 if x.sum() > 0 else 0 for x in testing]
             test_sol = Solution(testing.copy(), Y, solution.costs, solution.fixed)
-            sol = self.g_func(test_sol)
+            sol = self.g_func(test_sol, self.alpha)
             flag = self.is_feasible(test_sol, self.c_demand, self.f_capacities)
             if sol < min_g and (self.is_aspirated(sol, flag) or self.matrix[pos[2], pos[0]] < 0):
                 min_g = sol
@@ -162,7 +162,7 @@ class Tabu(object):
             testing[pos[3], pos[0]] = 1
             Y = [1 if x.sum() > 0 else 0 for x in testing]
             test_sol = Solution(testing.copy(), Y, solution.costs, solution.fixed)
-            sol = self.g_func(test_sol)
+            sol = self.g_func(test_sol, self.alpha)
             flag = self.is_feasible(test_sol, self.c_demand, self.f_capacities)
             if sol < min_g  and (self.is_aspirated(sol, flag) or self.matrix[pos[2], pos[1]] < 0):
                 min_g = sol

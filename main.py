@@ -178,7 +178,7 @@ def perturbation(s, c_costs, f_capacities, c_demand):
         s_ = option4(s)
     return s_
 
-def g(s0): #TODO: PREGUNTAR A MATIAS POR alpha*q
+def g(s0, alpha): #TODO: PREGUNTAR A MATIAS POR alpha*q
     sum2 = 0
     for index in range(len(s0.fixed)):
         sum2 += s0.Y[index] * s0.fixed[index]
@@ -186,7 +186,7 @@ def g(s0): #TODO: PREGUNTAR A MATIAS POR alpha*q
     for i, c_i in enumerate(s0.costs):
         for j, c_j  in enumerate(c_i):
             sum1 += c_j * s0.X[i][j]
-    return sum1 + sum2
+    return (sum1 + sum2)+ alpha*q(s0, c_demand, f_capacities)
 
 def q(s, c_demand, f_capacities):
     """
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     s0 = Solution(X, Y, c_costs, f_fixed)
     tabu = Tabu(g, q, is_feasible, K)
     #Paso 2
-    s_hat = tabu.tabu_search(s0.copy(), c_demand, f_capacities, n)
+    s_hat, alpha = tabu.tabu_search(s0.copy(), c_demand, f_capacities, n)
     #Paso 3
     if (is_feasible(s_hat, c_demand, f_capacities)):
         s_ast = s_hat.copy()
@@ -233,14 +233,14 @@ if __name__ == "__main__":
     #Paso 4
     for i in tqdm(range(K)):
     #Paso 5
-        s_p+rime = perturbation(s_hat.copy(), c_costs, f_capacities, c_demand)
+        s_prime = perturbation(s_hat.copy(), c_costs, f_capacities, c_demand)
     #Paso 6
-        S_ = tabu.tabu_search(s_prime.copy(), c_demand, f_capacities, n)
+        S_, alpha = tabu.tabu_search(s_prime.copy(), c_demand, f_capacities, n)
     #Paso 7
-        if is_feasible(S_, c_demand, f_capacities) and g(S_) < g_ast:
+        if is_feasible(S_, c_demand, f_capacities) and g(S_, alpha) < g_ast:
     #Paso 8
             s_ast = S_.copy()
-            g_ast = g(S_)
+            g_ast = g(S_, alpha)
             theta = 0
     #Paso 9: cierre del if
     #Paso 10
